@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>破砕機 処理能力検索</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 20px 24px;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.05em; }
+    header p { font-size: 0.8rem; color: #8892b0; margin-top: 4px; }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+
+    .filters {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 640px) {
+      .filters { grid-template-columns: 1fr; }
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .filter-group select {
+      width: 100%;
+      padding: 8px 32px 8px 10px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #1a1a2e;
+      background: #fff;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .filter-group select:focus {
+      outline: none;
+      border-color: #4f46e5;
+    }
+
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .stats-bar .count {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    .stats-bar .count strong {
+      color: #1a1a2e;
+      font-size: 1rem;
+    }
+
+    .reset-btn {
+      font-size: 0.8rem;
+      color: #4f46e5;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .reset-btn:hover { background: #ede9fe; }
+
+    .table-wrap {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    thead tr {
+      background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { color: #4f46e5; }
+
+    th .sort-icon {
+      display: inline-block;
+      margin-left: 4px;
+      opacity: 0.4;
+    }
+    th.sorted .sort-icon { opacity: 1; color: #4f46e5; }
+
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafbff; }
+
+    .badge-machine {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: #ede9fe;
+      color: #4f46e5;
+    }
+
+    .capacity-cell {
+      min-width: 200px;
+    }
+
+    .capacity-single {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .capacity-range {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .range-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .range-values {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cap-num {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .cap-range-num {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: #b45309;
+    }
+
+    .cap-tilde {
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    .cap-avg {
+      font-size: 0.75rem;
+      color: #78716c;
+      margin-left: 4px;
+    }
+
+    .bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: #f1f5f9;
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 60px;
+      max-width: 140px;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    .bar-fill.single {
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    }
+
+    .bar-range-min {
+      position: absolute;
+      top: 0; bottom: 0;
+      background: #fbbf24;
+      border-radius: 3px;
+    }
+
+    .bar-range-max {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 0;
+      background: linear-gradient(90deg, #4f46e5 0%, #b45309 100%);
+      border-radius: 3px;
+      opacity: 0.4;
+    }
+
+    .count-badge {
+      display: inline-block;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>破砕機 処理能力検索</h1>
+  <p>テスト実績データベース — 材料・機種・スクリーンで絞り込み</p>
+</header>
+
+<div class="container">
+
+  <div class="filters">
+    <div class="filter-group">
+      <label>材料</label>
+      <select id="sel-material">
+        <option value="">すべて</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>機種</label>
+      <select id="sel-machine">
+        <option value="">すべて</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>スクリーン (mm)</label>
+      <select id="sel-screen">
+        <option value="">すべて</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="count">検索結果: <strong id="result-count">0</strong> 件</div>
+    <button class="reset-btn" onclick="resetFilters()">リセット</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('material')" id="th-material">材料 <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('machine')" id="th-machine">機種 <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('screen')" id="th-screen">スクリーン (mm) <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('capacity')" id="th-capacity">処理能力 (kg/h) <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const RAW = [{"material":"A４コピー用紙","machine":"DS4080F","screen":"40","capacity":460.0},{"material":"ABS","machine":"DS2250","screen":"20","capacity":47.61},{"material":"DV線・IV線","machine":"DS2260","screen":"15","capacity":595.5},{"material":"FRP","machine":"DS2260","screen":"40","capacity":205.66},{"material":"Fケーブル","machine":"DS2260","screen":"40","capacity":949.0},{"material":"HDPE","machine":"DS2260","screen":"15","capacity":99.21},{"material":"HDPE","machine":"DS2260","screen":"15","capacity":141.39},{"material":"HI\u3000PVC","machine":"DS4080","screen":"80","capacity":869.7},{"material":"HIPVC\u3000T字管","machine":"DS2260","screen":"20","capacity":233.4},{"material":"IBC（サンバルク）","machine":"DS4080","screen":"40","capacity":319.9},{"material":"LiB箔","machine":"BS8060","screen":"30","capacity":931.17},{"material":"PC,PET,アクリルフィルム","machine":"ES3280F","screen":"6","capacity":429.0},{"material":"PC","machine":"DS2250","screen":"20","capacity":254.0},{"material":"PC","machine":"DS2260","screen":"25","capacity":356.0},{"material":"PC","machine":"DS2260","screen":"25(75°に加熱)","capacity":274.2},{"material":"PC+ABS塗装","machine":"DS2250","screen":"20","capacity":51.52},{"material":"PC板","machine":"DS2260","screen":"10","capacity":180.0},{"material":"PET","machine":"DS2260","screen":"10","capacity":71.44},{"material":"PETボトル","machine":"ES3280F","screen":"12","capacity":233.82},{"material":"PEダンゴ","machine":"DS2250","screen":"20","capacity":190.0},{"material":"PEドラム","machine":"DS2260","screen":"6","capacity":8.92},{"material":"PEドラム","machine":"DS2260","screen":"40","capacity":103.2},{"material":"PEドラム","machine":"ES3280F","screen":"8","capacity":142.34},{"material":"PEポリマー塊","machine":"DS2260","screen":"10","capacity":7.75},{"material":"PEポリマー塊","machine":"DS2260","screen":"25","capacity":115.28},{"material":"PEポリマー塊","machine":"DS2260","screen":"無し","capacity":231.93},{"material":"PE発泡体","machine":"ES3280F","screen":"10","capacity":29.16},{"material":"PE発泡体","machine":"ES3280F","screen":"20","capacity":78.69},{"material":"PP\/PE混合ブロック","machine":"DS2260","screen":"15","capacity":350.0},{"material":"PP\/PE混合流れ糸","machine":"eS3280","screen":"15","capacity":169.2},{"material":"PP","machine":"DS2260","screen":"20","capacity":402.92},{"material":"PPGF","machine":"DS2260","screen":"40","capacity":249.32},{"material":"PPバンド","machine":"ES3280F","screen":"15","capacity":64.8},{"material":"PP製フィルター","machine":"ES3280H","screen":"12","capacity":28.8},{"material":"PP製フィルター","machine":"ES3280H","screen":"12","capacity":13.14},{"material":"PP製フィルター","machine":"ES3280H","screen":"12","capacity":42.88},{"material":"PS塗装","machine":"DS2250","screen":"20","capacity":47.06},{"material":"PVCダンゴ","machine":"DS2250","screen":"20","capacity":400.0},{"material":"PVC継手","machine":"DS4080","screen":"80","capacity":1052.5},{"material":"SBR","machine":"DS2260","screen":"15","capacity":638.0},{"material":"SBR","machine":"DS2260","screen":"30","capacity":653.29},{"material":"アイオノマー","machine":"DS2260","screen":"10","capacity":9.56},{"material":"アイオノマー","machine":"DS2260","screen":"30","capacity":210.41},{"material":"アルミ面材モールド屑","machine":"DS2260","screen":"10","capacity":47.25},{"material":"ウレタン","machine":"DS2260","screen":"50","capacity":322.8},{"material":"ウレタン樹脂高硬度品","machine":"DS2260","screen":"40","capacity":229.0},{"material":"ウレタン抜き型","machine":"DS2260","screen":"50","capacity":79.0},{"material":"エナメル線","machine":"DS2260","screen":"20","capacity":987.5},{"material":"ガラス+フィルム","machine":"DS2260","screen":"20","capacity":588.39},{"material":"グラスウール","machine":"DS4080","screen":"20","capacity":179.6},{"material":"グラスウール","machine":"DS4080","screen":"20","capacity":239.0},{"material":"グラスウール","machine":"DS4080","screen":"20","capacity":193.8},{"material":"グラスウール","machine":"ES3280F","screen":"10","capacity":230.9},{"material":"グラスウール","machine":"ES3280F","screen":"10","capacity":228.6},{"material":"クラフト紙袋","machine":"DS2260","screen":"40","capacity":31.74},{"material":"ゴム","machine":"DS2260","screen":"30","capacity":277.26},{"material":"ゴム","machine":"DS2260","screen":"30","capacity":456.28},{"material":"ゴムブロック","machine":"DS2260","screen":"10","capacity":468.24},{"material":"シートパルプ","machine":"DS2260","screen":"15","capacity":201.27},{"material":"シートパルプ","machine":"DS2260","screen":"20","capacity":70.8},{"material":"シートパルプ","machine":"DS2260","screen":"30","capacity":83.55},{"material":"シートパルプ","machine":"DS2260","screen":"40","capacity":19.43},{"material":"シリンダー","machine":"DS4080","screen":"20","capacity":1097.28},{"material":"ターポリン耳材\u3000ロール","machine":"DS40150","screen":"20","capacity":400.0},{"material":"タイヤチップ","machine":"DS2260","screen":"10","capacity":117.78},{"material":"タイヤチップ","machine":"DS2260","screen":"15","capacity":209.52},{"material":"タイヤチップ","machine":"DS2260","screen":"20","capacity":307.85},{"material":"タケラック","machine":"ES3280F","screen":"6","capacity":319.49},{"material":"ダンゴ","machine":"DS2260","screen":"8","capacity":63.96},{"material":"ダンゴ","machine":"DS2260","screen":"10","capacity":14.59},{"material":"ダンゴ","machine":"DS2260","screen":"10","capacity":19.26},{"material":"ダンゴ","machine":"DS2260","screen":"15","capacity":205.08},{"material":"ダンゴ","machine":"DS2260","screen":"15","capacity":134.02},{"material":"ダンゴ","machine":"DS2260","screen":"15","capacity":150.5},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":212.2},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":148.3},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":354.0},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":156.0},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":202.6},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":600.0},{"material":"ダンゴ","machine":"DS2260","screen":"20","capacity":108.24},{"material":"ダンゴ","machine":"DS2260","screen":"25","capacity":302.0},{"material":"ダンゴ","machine":"DS2260","screen":"40","capacity":275.74},{"material":"ダンゴ","machine":"DS2260","screen":"50","capacity":648.34},{"material":"ダンゴ","machine":"DS2260","screen":"50","capacity":281.08},{"material":"ダンゴ","machine":"DS2260","screen":"50","capacity":182.16},{"material":"ダンゴ","machine":"ES3280F","screen":"8","capacity":341.3},{"material":"ダンゴ非加硫","machine":"DS2250","screen":"40","capacity":103.0},{"material":"ダンゴ非加硫","machine":"DS2250","screen":"Z型","capacity":437.0},{"material":"ダンゴ非加硫","machine":"DS2250","screen":"Z型","capacity":142.0},{"material":"ダンボール端材","machine":"DS2260","screen":"40","capacity":147.57},{"material":"ダンボール端材","machine":"DS2260","screen":"無し","capacity":207.54},{"material":"チタン（円盤状） t0.5mm","machine":"DS2260","screen":"20","capacity":66.0},{"material":"チタン（粗破砕品） t0.5mm","machine":"DS2260","screen":"20","capacity":149.0},{"material":"チタン（帯状） t0.1mm","machine":"DS2260","screen":"20","capacity":56.0},{"material":"チタンダライ粉","machine":"DS2260","screen":"10","capacity":82.8},{"material":"チタンダライ粉","machine":"DS2260","screen":"10","capacity":60.0},{"material":"チタンダライ粉","machine":"DS2260","screen":"10","capacity":71.4},{"material":"チョコ","machine":"DS4080","screen":"40","capacity":654.55},{"material":"ドラム","machine":"DS4080","screen":"40","capacity":236.89},{"material":"ナイロンシート、紙質","machine":"DS4080F","screen":"40","capacity":360.0},{"material":"ネット","machine":"DS2260","screen":"25","capacity":77.41},{"material":"ネット","machine":"DS2260","screen":"35","capacity":137.44},{"material":"パインバーク","machine":"ES3280H","screen":"4","capacity":504.96},{"material":"パインバーク","machine":"ES3280H","screen":"5","capacity":1241.4},{"material":"パウチ","machine":"DS4080","screen":"20","capacity":890.23},{"material":"フィルム","machine":"DS2260","screen":"40","capacity":101.9},{"material":"フィルム類","machine":"DS4080F","screen":"40","capacity":342.86},{"material":"フェノール断熱材","machine":"ES3280F","screen":"6","capacity":267.9},{"material":"プラスチックコンテナ","machine":"ES3280F","screen":"10","capacity":538.18},{"material":"プラスチック製品","machine":"DS2260","screen":"50","capacity":167.9},{"material":"プラスチック製品","machine":"TS2160","screen":"ダブルフック","capacity":279.9},{"material":"フレコン","machine":"DS4080","screen":"60","capacity":126.32},{"material":"フレコン","machine":"DS4080","screen":"60","capacity":92.73},{"material":"フレコン","machine":"DS4080","screen":"60","capacity":105.0},{"material":"ベニヤ合板","machine":"DS4080","screen":"40","capacity":235.0},{"material":"ベニヤ箱","machine":"DS4080","screen":"40","capacity":540.0},{"material":"ポリウレタン","machine":"ES3280H","screen":"35","capacity":319.2},{"material":"ポリウレタン","machine":"ES3280H","screen":"40","capacity":558.78},{"material":"ポリブデン","machine":"DS2260","screen":"10","capacity":73.69},{"material":"ポリマー繊維塊","machine":"DS2260","screen":"15","capacity":169.0},{"material":"ポリマー繊維塊","machine":"DS2260","screen":"15","capacity":126.0},{"material":"ポリ容器など","machine":"DS2260","screen":"50","capacity":544.0},{"material":"マグネットシート非磁性ブロック","machine":"TS2180","screen":"20mm2フック","capacity":2600.0},{"material":"ヨーグルト","machine":"DS4080","screen":"40","capacity":576.0},{"material":"ラミネートチューブ","machine":"ES3280F","screen":"20","capacity":198.6},{"material":"ラミネートチューブ","machine":"ES3280F","screen":"20","capacity":188.7},{"material":"ランニングフレコン","machine":"DS2260","screen":"40","capacity":27.16},{"material":"ロール品","machine":"DS4080","screen":"80","capacity":229.7},{"material":"ワイヤー","machine":"ES3280F","screen":"8","capacity":140.0},{"material":"圧縮品","machine":"DS4080","screen":"80","capacity":237.6},{"material":"衣料品","machine":"DS2260","screen":"50","capacity":504.0},{"material":"衣類、い草、ロープ、","machine":"DS4080F","screen":"40","capacity":18.2},{"material":"衣類","machine":"DS2260","screen":"40","capacity":465.0},{"material":"衣類","machine":"DS2260","screen":"50","capacity":603.0},{"material":"衣類","machine":"DS2260","screen":"60","capacity":496.0},{"material":"衣類","machine":"DS2260","screen":"80","capacity":476.0},{"material":"塩ビ管","machine":"DS2260","screen":"25","capacity":428.47},{"material":"塩ビ管","machine":"DS4080","screen":"60","capacity":1453.0},{"material":"塩ビ管","machine":"ES3280F","screen":"15","capacity":906.86},{"material":"汚泥","machine":"DS2260","screen":"50","capacity":514.0},{"material":"黄色","machine":"DS4080","screen":"80","capacity":201.7},{"material":"乾燥竹","machine":"ES3280H","screen":"5","capacity":247.59},{"material":"乾電池","machine":"DS2260","screen":"15","capacity":453.6},{"material":"基板","machine":"DS4080","screen":"20","capacity":1314.0},{"material":"基板","machine":"DS4080","screen":"25","capacity":1685.0},{"material":"基板","machine":"DS4080","screen":"25","capacity":1426.0},{"material":"機密書類","machine":"TS2144SP","screen":"20mm6フック","capacity":667.0},{"material":"擬木","machine":"DS2260","screen":"20","capacity":284.42},{"material":"光線","machine":"DS2260","screen":"20","capacity":1006.3},{"material":"硬質廃プラ","machine":"DS4080","screen":"60","capacity":902.48},{"material":"高圧線・CV線","machine":"DS2260","screen":"15","capacity":651.8},{"material":"混廃","machine":"DS4080","screen":"60","capacity":1231.85},{"material":"雑誌\u3000※束状","machine":"DS40150","screen":"40（フラット回転刃）","capacity":1836.9},{"material":"雑誌、紙管","machine":"DS4080F","screen":"40","capacity":813.6},{"material":"雑誌※束状","machine":"DS40150","screen":"40","capacity":83.81},{"material":"雑誌※束状","machine":"DS40150","screen":"40","capacity":84.06},{"material":"雑誌※束状","machine":"DS48150","screen":"40","capacity":1426.7},{"material":"雑誌※束状","machine":"DS48150","screen":"40","capacity":1101.8},{"material":"雑誌※束状","machine":"DS48150","screen":"40","capacity":847.5},{"material":"三芯線（SV線）","machine":"DS2260","screen":"15","capacity":377.8},{"material":"紙ロール","machine":"DS2260","screen":"30","capacity":225.43},{"material":"紙ロール","machine":"DS2260","screen":"80","capacity":359.1},{"material":"紙ロール","machine":"DS2260","screen":"80","capacity":286.8},{"material":"紙ロール","machine":"DS2260","screen":"80","capacity":271.4},{"material":"紙ロール","machine":"DS2260","screen":"無し","capacity":579.41},{"material":"紙ロール","machine":"DS4080","screen":"80","capacity":1187.6},{"material":"紙管","machine":"DS2250","screen":"40","capacity":201.12},{"material":"紙管","machine":"DS2250","screen":"Z型スクリーン","capacity":213.39},{"material":"紙管","machine":"DS2250","screen":"無し","capacity":231.2},{"material":"紙管","machine":"DS2260","screen":"30","capacity":252.0},{"material":"紙類","machine":"DS2260","screen":"20","capacity":233.0},{"material":"紙類","machine":"DS2260","screen":"30","capacity":355.0},{"material":"紙類","machine":"DS2260","screen":"40","capacity":420.0},{"material":"飼料","machine":"ES3280F","screen":"6","capacity":300.0},{"material":"耳トリミング品","machine":"DS2260","screen":"20","capacity":141.0},{"material":"耳トリミング品","machine":"DS4080F","screen":"40","capacity":199.0},{"material":"自動車内装用フェルト端材","machine":"ES3280F","screen":"15","capacity":202.0},{"material":"自動車内装用フェルト端材","machine":"ES3280F","screen":"40","capacity":388.0},{"material":"自動車部品","machine":"DS2260","screen":"20","capacity":118.0},{"material":"自動車部品","machine":"TS2160","screen":"ダブルフック","capacity":764.0},{"material":"自動車部品","machine":"TS2160","screen":"シングルフック","capacity":600.0},{"material":"自動車用ワイヤハーネス","machine":"DS2260","screen":"20","capacity":233.5},{"material":"車バンパー","machine":"DS2260","screen":"30","capacity":175.0},{"material":"樹脂ベルト","machine":"ES3280H","screen":"5","capacity":6.84},{"material":"樹脂塊","machine":"DS2260","screen":"6","capacity":162.0},{"material":"樹脂塊","machine":"DS2260","screen":"6","capacity":7.0},{"material":"樹脂塊","machine":"DS2260","screen":"12","capacity":1108.0},{"material":"樹脂塊","machine":"DS2260","screen":"20","capacity":114.0},{"material":"樹脂塊","machine":"DS2260","screen":"30","capacity":192.0},{"material":"樹脂塊","machine":"DS2260","screen":"60","capacity":595.0},{"material":"樹脂塊","machine":"ES3280H","screen":"15","capacity":114.13},{"material":"樹脂成形品","machine":"ES3280H","screen":"5","capacity":0.27},{"material":"樹脂成形品","machine":"ES3280H","screen":"5","capacity":0.27},{"material":"樹脂成形品","machine":"ES3280H","screen":"15","capacity":93.09},{"material":"樹皮","machine":"ES3280F","screen":"15","capacity":514.0},{"material":"焼成済みリチウムイオン電池","machine":"DS2260","screen":"8","capacity":363.6},{"material":"焼成済みリチウムイオン電池","machine":"DS2260","screen":"10","capacity":454.68},{"material":"食品生地サンプル","machine":"ES3280F","screen":"10","capacity":1096.56},{"material":"生竹","machine":"ES3280H","screen":"5","capacity":271.75},{"material":"石膏ボード紙","machine":"ES3280","screen":"6","capacity":90.0},{"material":"石膏ボード紙","machine":"ES3280","screen":"10","capacity":150.0},{"material":"炭素繊維","machine":"DS4080","screen":"80","capacity":602.34},{"material":"炭素繊維","machine":"ES3280H","screen":"5","capacity":166.3},{"material":"竹","machine":"ES3280","screen":"6","capacity":82.3},{"material":"竹","machine":"ES3280","screen":"10","capacity":480.8},{"material":"通信機","machine":"DS2260","screen":"50","capacity":62.0},{"material":"鉄・アルミ　切削屑","machine":"DS2260","screen":"20","capacity":213.36},{"material":"電線","machine":"DS2260","screen":"30","capacity":100.0},{"material":"塗料塊","machine":"DS2260","screen":"40","capacity":2240.0},{"material":"銅パイプ","machine":"DS2260","screen":"20","capacity":929.9},{"material":"銅箔","machine":"DS48150","screen":"10","capacity":487.0},{"material":"銅箔","machine":"ES3280H","screen":"15","capacity":86.0},{"material":"銅箔","machine":"ES3280H","screen":"15","capacity":173.0},{"material":"銅箔","machine":"ES3280H","screen":"15","capacity":63.0},{"material":"農業用ビニール","machine":"DS2260","screen":"40","capacity":218.3},{"material":"農業用ビニール","machine":"DS2260","screen":"50","capacity":78.9},{"material":"農業用ビニール","machine":"DS2260","screen":"50","capacity":75.2},{"material":"農業用ビニール","machine":"DS2260","screen":"80","capacity":289.6},{"material":"農業用ビニール","machine":"DS2260","screen":"80","capacity":60.8},{"material":"農業用ビニール","machine":"DS2260","screen":"80","capacity":200.9},{"material":"破砕済み木","machine":"ES3280F","screen":"5","capacity":568.42},{"material":"破砕済み木","machine":"ES3280F","screen":"5","capacity":334.2},{"material":"破砕済み木","machine":"ES3280F","screen":"6","capacity":289.68},{"material":"破砕済み木","machine":"ES3280F","screen":"8","capacity":363.75},{"material":"破砕済み木","machine":"ES3280F","screen":"8","capacity":292.16},{"material":"廃プラ","machine":"DS2260","screen":"50","capacity":170.0},{"material":"廃プラ汚泥","machine":"DS2260","screen":"40","capacity":151.0},{"material":"廃プラ汚泥","machine":"DS2260","screen":"60","capacity":316.0},{"material":"廃プラ帯状","machine":"DS2260","screen":"50","capacity":187.0},{"material":"廃プラ帯状","machine":"DS2260","screen":"50","capacity":96.0},{"material":"廃プラ容器","machine":"DS2260","screen":"50","capacity":72.0},{"material":"廃プラ類","machine":"DS2260","screen":"40","capacity":240.0},{"material":"廃基板","machine":"HS6045","screen":"6","capacity":54.6},{"material":"発泡ウレタン","machine":"DS2260","screen":"10","capacity":17.0},{"material":"発泡ウレタン","machine":"DS2260","screen":"10","capacity":10.5},{"material":"発泡ウレタン","machine":"ES3280H","screen":"5","capacity":47.22},{"material":"発泡ウレタン","machine":"ES3280H","screen":"5","capacity":67.96},{"material":"発泡塩ビロール","machine":"DS2260","screen":"40","capacity":322.0},{"material":"発泡塩ビロール","machine":"DS2260","screen":"50","capacity":353.0},{"material":"非加硫パイプ","machine":"DS2250","screen":"Z型","capacity":284.0},{"material":"不織布","machine":"DS2260","screen":"80","capacity":109.76},{"material":"不織布","machine":"DS2260","screen":"不明","capacity":139.1},{"material":"不織布","machine":"DS2260","screen":"不明","capacity":331.2},{"material":"不織布","machine":"DS2260","screen":"不明","capacity":334.8},{"material":"不織布","machine":"DS2260","screen":"不明","capacity":270.0},{"material":"不織布","machine":"DS2260","screen":"不明","capacity":291.6},{"material":"不織布角","machine":"ES3280F","screen":"20","capacity":86.57},{"material":"不織布糸","machine":"ES3280F","screen":"20","capacity":49.47},{"material":"不織布面材モールド屑","machine":"DS2260","screen":"10","capacity":33.62},{"material":"粉末洗剤材料","machine":"DS2260","screen":"8","capacity":198.0},{"material":"粉末洗剤材料","machine":"DS2260","screen":"10（上固定刃無し）","capacity":395.0},{"material":"粉末洗剤材料","machine":"DS2260","screen":"10","capacity":431.0},{"material":"粉末洗剤材料","machine":"DS2260","screen":"25","capacity":469.0},{"material":"粉末洗剤材料","machine":"DS2260","screen":"35","capacity":577.0},{"material":"壁紙バラ","machine":"DS40150","screen":"20","capacity":430.0},{"material":"壁紙ロール","machine":"DS2250","screen":"30","capacity":130.0},{"material":"壁紙ロール","machine":"DS2250","screen":"40","capacity":164.0},{"material":"壁紙ロール","machine":"DS40150","screen":"20","capacity":504.0},{"material":"壁紙ロール","machine":"DS40150","screen":"40","capacity":1275.0},{"material":"弁当がら、紙類等","machine":"DS2250","screen":"20","capacity":35.8},{"material":"弁当がら、紙類等","machine":"DS2250","screen":"40","capacity":88.0},{"material":"麻袋","machine":"DS2260","screen":"20","capacity":190.0},{"material":"麻袋","machine":"DS2260","screen":"30","capacity":76.0},{"material":"麻袋","machine":"DS2260","screen":"60","capacity":156.0},{"material":"麻袋","machine":"DS2260","screen":"60","capacity":121.5},{"material":"麻袋","machine":"DS2260","screen":"80","capacity":190.0},{"material":"毛布、布団","machine":"DS4080F","screen":"40","capacity":273.0},{"material":"網","machine":"ES3280F","screen":"8","capacity":162.0},{"material":"網","machine":"ES3280F","screen":"8","capacity":147.83},{"material":"網","machine":"ES3280F","screen":"8","capacity":152.47},{"material":"網","machine":"ES3280F","screen":"8","capacity":74.28},{"material":"網ロール","machine":"DS4080","screen":"50","capacity":60.0},{"material":"網ロール","machine":"DS4080","screen":"80","capacity":120.0},{"material":"網ロール","machine":"ES3280F","screen":"8","capacity":272.0},{"material":"木","machine":"DS2260","screen":"15","capacity":322.21},{"material":"木","machine":"DS2260","screen":"25","capacity":393.0},{"material":"木","machine":"DS2260","screen":"35","capacity":516.51},{"material":"木","machine":"DS4080","screen":"60","capacity":481.27},{"material":"木チップ","machine":"ES3280","screen":"6","capacity":1543.0},{"material":"木チップ","machine":"HS6045","screen":"6","capacity":337.38},{"material":"餅塊","machine":"DS4080","screen":"40","capacity":720.0},{"material":"容リ","machine":"ES3280H","screen":"10","capacity":400.0},{"material":"冷蔵庫扉　強化ガラス仕様","machine":"DS4080","screen":"40","capacity":113.0},{"material":"冷蔵庫扉","machine":"DS2260","screen":"10","capacity":192.0},{"material":"冷蔵庫扉","machine":"DS2260","screen":"20","capacity":166.94},{"material":"椰子繊維塊","machine":"DS2260","screen":"20","capacity":506.0},{"material":"椰子繊維塊","machine":"DS2260","screen":"20","capacity":485.0}];
+
+// 同一組み合わせをグループ化して1行に集約
+function buildGroups(data) {
+  const map = new Map();
+  data.forEach(d => {
+    const key = `${d.material}||${d.machine}||${d.screen}`;
+    if (!map.has(key)) {
+      map.set(key, { material: d.material, machine: d.machine, screen: d.screen, values: [] });
+    }
+    map.get(key).values.push(d.capacity);
+  });
+  return Array.from(map.values()).map(g => {
+    const min = Math.min(...g.values);
+    const max = Math.max(...g.values);
+    const avg = g.values.reduce((s, v) => s + v, 0) / g.values.length;
+    return { ...g, min, max, avg: Math.round(avg * 10) / 10, count: g.values.length };
+  });
+}
+
+const GROUPS = buildGroups(RAW);
+const MAX_CAP = Math.max(...GROUPS.map(g => g.max));
+
+let sortKey = 'material';
+let sortAsc = true;
+
+function initDropdowns() {
+  // 材料（五十音順）
+  const materials = [...new Set(RAW.map(d => d.material))].sort((a, b) =>
+    a.localeCompare(b, 'ja')
+  );
+  const selMat = document.getElementById('sel-material');
+  materials.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    selMat.appendChild(o);
+  });
+
+  // 機種
+  const machines = [...new Set(RAW.map(d => d.machine))].sort();
+  const selM = document.getElementById('sel-machine');
+  machines.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    selM.appendChild(o);
+  });
+
+  // スクリーン
+  const screens = [...new Set(RAW.map(d => d.screen))].sort((a, b) => {
+    const na = parseFloat(a), nb = parseFloat(b);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b, 'ja');
+  });
+  const selS = document.getElementById('sel-screen');
+  screens.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    selS.appendChild(o);
+  });
+}
+
+function applyFilters() {
+  const material = document.getElementById('sel-material').value;
+  const machine  = document.getElementById('sel-machine').value;
+  const screen   = document.getElementById('sel-screen').value;
+
+  const filtered = GROUPS.filter(g => {
+    if (material && g.material !== material) return false;
+    if (machine  && g.machine  !== machine)  return false;
+    if (screen   && g.screen   !== screen)   return false;
+    return true;
+  });
+
+  renderTable(filtered);
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  applyFilters();
+}
+
+function renderTable(filtered) {
+  // ソート
+  const sorted = [...filtered].sort((a, b) => {
+    let va, vb;
+    if (sortKey === 'capacity') {
+      va = a.avg; vb = b.avg;
+      return sortAsc ? va - vb : vb - va;
+    }
+    if (sortKey === 'screen') {
+      const na = parseFloat(a.screen), nb = parseFloat(b.screen);
+      if (!isNaN(na) && !isNaN(nb)) return sortAsc ? na - nb : nb - na;
+    }
+    va = a[sortKey]; vb = b[sortKey];
+    return sortAsc
+      ? String(va).localeCompare(String(vb), 'ja')
+      : String(vb).localeCompare(String(va), 'ja');
+  });
+
+  document.getElementById('result-count').textContent = sorted.length;
+
+  // ソートアイコン
+  ['material','machine','screen','capacity'].forEach(k => {
+    const th = document.getElementById('th-' + k);
+    const icon = th.querySelector('.sort-icon');
+    if (sortKey === k) {
+      th.classList.add('sorted');
+      icon.textContent = sortAsc ? '↑' : '↓';
+    } else {
+      th.classList.remove('sorted');
+      icon.textContent = '↕';
+    }
+  });
+
+  const tbody = document.getElementById('tbody');
+
+  if (sorted.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="no-results">該当するデータがありません</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = sorted.map(g => {
+    const isRange = g.count > 1 && g.min !== g.max;
+    const pctMin = Math.round((g.min / MAX_CAP) * 100);
+    const pctMax = Math.round((g.max / MAX_CAP) * 100);
+    const pctAvg = Math.round((g.avg / MAX_CAP) * 100);
+
+    let capCell;
+    if (isRange) {
+      capCell = `
+        <div class="capacity-range">
+          <div class="range-values">
+            <span class="cap-range-num">${g.min.toLocaleString()}</span>
+            <span class="cap-tilde">〜</span>
+            <span class="cap-range-num">${g.max.toLocaleString()}</span>
+            <span class="cap-avg">（平均 ${g.avg.toLocaleString()}）</span>
+            <span class="count-badge">${g.count}件</span>
+          </div>
+          <div class="bar-wrap" style="position:relative; margin-top:4px;">
+            <div class="bar-range-max" style="width:${pctMax}%;"></div>
+            <div class="bar-range-min" style="left:0; width:${pctMin}%;"></div>
+          </div>
+        </div>`;
+    } else {
+      capCell = `
+        <div class="capacity-single">
+          <span class="cap-num">${g.min.toLocaleString()}</span>
+          <div class="bar-wrap">
+            <div class="bar-fill single" style="width:${pctAvg}%;"></div>
+          </div>
+        </div>`;
+    }
+
+    return `<tr>
+      <td>${esc(g.material)}</td>
+      <td><span class="badge-machine">${esc(g.machine)}</span></td>
+      <td>${esc(g.screen)}</td>
+      <td class="capacity-cell">${capCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function resetFilters() {
+  document.getElementById('sel-material').value = '';
+  document.getElementById('sel-machine').value = '';
+  document.getElementById('sel-screen').value = '';
+  applyFilters();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('sel-material').addEventListener('change', applyFilters);
+document.getElementById('sel-machine').addEventListener('change', applyFilters);
+document.getElementById('sel-screen').addEventListener('change', applyFilters);
+
+initDropdowns();
+applyFilters();
+</script>
+</body>
+</html>
