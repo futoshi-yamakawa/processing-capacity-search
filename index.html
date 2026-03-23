@@ -266,6 +266,46 @@
       color: #94a3b8;
       font-size: 0.95rem;
     }
+
+    @media (max-width: 640px) {
+      .table-wrap { overflow: visible; box-shadow: none; background: transparent; }
+
+      table, thead, tbody, th, td, tr { display: block; }
+      thead tr { display: none; }
+
+      tbody tr {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      }
+      tbody tr:hover td { background: transparent; }
+
+      td {
+        display: flex;
+        align-items: flex-start;
+        padding: 9px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        gap: 10px;
+      }
+      td:last-child { border-bottom: none; }
+
+      td::before {
+        content: attr(data-label);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        min-width: 68px;
+        flex-shrink: 0;
+        padding-top: 3px;
+      }
+
+      .capacity-cell { min-width: unset; }
+      .bar-wrap { max-width: 100px; }
+    }
   </style>
 </head>
 <body>
@@ -519,10 +559,10 @@ function renderTable(filtered) {
     }
 
     return `<tr>
-      <td>${esc(g.material)}</td>
-      <td><span class="badge-machine">${esc(g.machine)}</span></td>
-      <td>${esc(g.screen)}</td>
-      <td class="capacity-cell">${capCell}</td>
+      <td data-label="材料">${esc(g.material)}</td>
+      <td data-label="機種"><span class="badge-machine">${esc(g.machine)}</span></td>
+      <td data-label="スクリーン">${esc(g.screen)} mm</td>
+      <td data-label="処理能力" class="capacity-cell">${capCell}</td>
     </tr>`;
   }).join('');
 }
