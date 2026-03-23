@@ -380,7 +380,51 @@ function initDropdowns() {
   });
 }
 
+function updateDropdownOptions() {
+  const material = document.getElementById('sel-material').value;
+  const machine  = document.getElementById('sel-machine').value;
+  const screen   = document.getElementById('sel-screen').value;
+
+  // 各ドロップダウンの選択肢 = 他の2つの条件に合致するRAWデータの中にある値
+  const availMaterials = new Set(RAW.filter(d =>
+    (!machine || d.machine === machine) && (!screen || d.screen === screen)
+  ).map(d => d.material));
+
+  const availMachines = new Set(RAW.filter(d =>
+    (!material || d.material === material) && (!screen || d.screen === screen)
+  ).map(d => d.machine));
+
+  const availScreens = new Set(RAW.filter(d =>
+    (!material || d.material === material) && (!machine || d.machine === machine)
+  ).map(d => d.screen));
+
+  rebuildSelect('sel-material', availMaterials, material, (a, b) => a.localeCompare(b, 'ja'));
+  rebuildSelect('sel-machine',  availMachines,  machine,  (a, b) => a.localeCompare(b));
+  rebuildSelect('sel-screen',   availScreens,   screen,   (a, b) => {
+    const na = parseFloat(a), nb = parseFloat(b);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b, 'ja');
+  });
+}
+
+function rebuildSelect(id, availSet, currentVal, sortFn) {
+  const sel = document.getElementById(id);
+  const validVal = availSet.has(currentVal) ? currentVal : '';
+
+  const options = [...availSet].sort(sortFn);
+  sel.innerHTML = '<option value="">すべて</option>';
+  options.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (v === validVal) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (currentVal && !availSet.has(currentVal)) sel.value = '';
+}
+
 function applyFilters() {
+  updateDropdownOptions();
+
   const material = document.getElementById('sel-material').value;
   const machine  = document.getElementById('sel-machine').value;
   const screen   = document.getElementById('sel-screen').value;
